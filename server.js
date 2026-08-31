@@ -14,6 +14,19 @@ const upload = multer({
 app.get("/", (req, res) => {
   res.send("🚀 Flypi Hosting Backend is Online!");
 });
+app.post("/start", (req, res) => {
+  res.json({
+    success: true,
+    message: "Bot start command received! ▶️"
+  });
+});
+
+app.post("/stop", (req, res) => {
+  res.json({
+    success: true,
+    message: "Bot stop command received! ⏹️"
+  });
+});
 
 app.post("/upload", upload.single("botFile"), (req, res) => {
   if (!req.file) {
