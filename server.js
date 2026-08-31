@@ -8,7 +8,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 const upload = multer({
-  dest: "uploads/"
+  dest: "uploads/",
+  limits: {
+    fileSize: 50 * 1024 * 1024
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.toLowerCase().endsWith(".zip")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only ZIP files are allowed."));
+    }
+  }
 });
 
 app.get("/", (req, res) => {
