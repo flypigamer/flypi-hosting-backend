@@ -106,6 +106,7 @@ res.json({
   success: true,
   bots: bots
 });
+});
 
   app.listen(PORT, () => {
   console.log(`Flypi Backend running on port ${PORT}`);
