@@ -68,6 +68,13 @@ app.post("/upload", upload.single("botFile"), (req, res) => {
   }
 });
 
+app.get("/bots", (req, res) => {
+  res.json({
+    success: true,
+    bots: []
+  });
+});
+
   app.listen(PORT, () => {
   console.log(`Flypi Backend running on port ${PORT}`);
 });
