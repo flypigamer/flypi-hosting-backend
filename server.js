@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const AdmZip = require("adm-zip");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,9 +70,18 @@ app.post("/upload", upload.single("botFile"), (req, res) => {
 });
 
 app.get("/bots", (req, res) => {
+  if (!fs.existsSync("bots")) {
+    return res.json({
+      success: true,
+      bots: []
+    });
+  }
+
+  const bots = fs.readdirSync("bots");
+
   res.json({
     success: true,
-    bots: []
+    bots: bots
   });
 });
 
