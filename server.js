@@ -87,12 +87,24 @@ app.get("/bots", (req, res) => {
     });
   }
 
-  const bots = fs.readdirSync("bots");
+ const botFolders = fs.readdirSync("bots");
 
-  res.json({
-    success: true,
-    bots: bots
-  });
+const bots = botFolders.map((folder) => {
+  const infoPath = "bots/" + folder + "/bot-info.json";
+
+  if (fs.existsSync(infoPath)) {
+    return JSON.parse(fs.readFileSync(infoPath, "utf8"));
+  }
+
+  return {
+    name: folder,
+    fileName: "Unknown"
+  };
+});
+
+res.json({
+  success: true,
+  bots: bots
 });
 
   app.listen(PORT, () => {
