@@ -51,7 +51,17 @@ app.post("/upload", upload.single("botFile"), (req, res) => {
   try {
     const zip = new AdmZip(req.file.path);
 
-    zip.extractAllTo("bots/" + Date.now(), true);
+    const botFolder = "bots/" + Date.now();
+
+zip.extractAllTo(botFolder, true);
+
+fs.writeFileSync(
+  botFolder + "/bot-info.json",
+  JSON.stringify({
+    name: req.body.botName,
+    fileName: req.file.originalname
+  })
+);
 
     res.json({
       success: true,
