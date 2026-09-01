@@ -43,17 +43,31 @@ app.post("/upload", upload.single("botFile"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       success: false,
-      message: "No file uploaded."
+      message: "No ZIP file uploaded."
     });
   }
 
-  res.json({
-    success: true,
-    message: "Bot file uploaded successfully! 🚀",
-    fileName: req.file.originalname
-  });
+  try {
+    const zip = new AdmZip(req.file.path);
+
+    zip.extractAllTo("bots/" + Date.now(), true);
+
+    res.json({
+      success: true,
+      message: "Bot ZIP uploaded and extracted successfully! 🚀",
+      fileName: req.file.originalname
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "ZIP extraction failed."
+    });
+  }
 });
 
-app.listen(PORT, () => {
+  app.listen(PORT, () => {
   console.log(`Flypi Backend running on port ${PORT}`);
 });
