@@ -198,6 +198,21 @@ app.post("/stop", (req, res) => {
   });
 });
 
+pool.query(`
+  CREATE TABLE IF NOT EXISTS bots (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Offline'
+  )
+`)
+.then(() => {
+  console.log("✅ Database table ready");
+})
+.catch((error) => {
+  console.error("❌ Database error:", error);
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Flypi Backend running on port ${PORT}`);
 });
