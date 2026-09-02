@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
   res.send("🚀 Flypi Hosting Backend is Online!");
 });
 
-app.post("/upload", upload.single("botFile"), (req, res) => {
+app.post("/upload", upload.single("botFile"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       success: false,
@@ -68,6 +68,17 @@ app.post("/upload", upload.single("botFile"), (req, res) => {
     const zip = new AdmZip(req.file.path);
 
     zip.extractAllTo(botFolder, true);
+
+    await pool.query(
+      `INSERT INTO bots (id, name, file_name, status)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        botId,
+        req.body.botName,
+        req.file.originalname,
+        "Offline"
+      ]
+    );
 
     fs.writeFileSync(
       botFolder + "/bot-info.json",
@@ -106,31 +117,28 @@ app.post("/upload", upload.single("botFile"), (req, res) => {
   }
 });
 
-app.get("/bots", (req, res) => {
-  const folders = fs.readdirSync("bots");
+app.get("/bots", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, file_name AS \"fileName\", status FROM bots ORDER BY id ASC"
+    );
 
-  const bots = folders.map((folder) => {
-    const infoPath = "bots/" + folder + "/bot-info.json";
+    res.json({
+      success: true,
+      bots: result.rows
+    });
 
-    if (fs.existsSync(infoPath)) {
-      return JSON.parse(fs.readFileSync(infoPath, "utf8"));
-    }
+  } catch (error) {
+    console.error(error);
 
-    return {
-      id: folder,
-      name: folder,
-      fileName: "Unknown",
-      status: "Offline"
-    };
-  });
-
-  res.json({
-    success: true,
-    bots: bots
-  });
+    res.status(500).json({
+      success: false,
+      message: "Failed to load bots."
+    });
+  }
 });
 
-app.post("/start", (req, res) => {
+app.post("/start", async (req, res) => {
   const botId = req.body.botId;
 
   if (!botId) {
@@ -158,13 +166,18 @@ app.post("/start", (req, res) => {
     JSON.stringify(info, null, 2)
   );
 
+  await pool.query(
+    "UPDATE bots SET status = $1 WHERE id = $2",
+    ["Running", botId]
+  );
+
   res.json({
     success: true,
     message: info.name + " is now marked as Running! ▶️"
   });
 });
 
-app.post("/stop", (req, res) => {
+app.post("/stop", async (req, res) => {
   const botId = req.body.botId;
 
   if (!botId) {
@@ -190,6 +203,11 @@ app.post("/stop", (req, res) => {
   fs.writeFileSync(
     infoPath,
     JSON.stringify(info, null, 2)
+  );
+
+  await pool.query(
+    "UPDATE bots SET status = $1 WHERE id = $2",
+    ["Offline", botId]
   );
 
   res.json({
