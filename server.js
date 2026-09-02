@@ -231,6 +231,6 @@ pool.query(`
   console.error("❌ Database error:", error);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Flypi Backend running on port ${PORT}`);
 });
