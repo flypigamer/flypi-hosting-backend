@@ -221,7 +221,8 @@ pool.query(`
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     file_name TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'Offline'
+    status TEXT NOT NULL DEFAULT 'Offline',
+    token TEXT
   )
 `)
 .then(() => {
