@@ -87,16 +87,19 @@ app.post("/upload", upload.single("botFile"), async (req, res) => {
 
     zip.extractAllTo(botFolder, true);
 
-    await pool.query(
-      `INSERT INTO bots (id, name, file_name, status)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        botId,
-        req.body.botName,
-        req.file.originalname,
-        "Offline"
-      ]
-    );
+    const encryptedToken = encryptToken(req.body.botToken);
+
+await pool.query(
+  `INSERT INTO bots (id, name, file_name, status, token)
+   VALUES ($1, $2, $3, $4, $5)`,
+  [
+    botId,
+    req.body.botName,
+    req.file.originalname,
+    "Offline",
+    encryptedToken
+  ]
+);
 
     fs.writeFileSync(
       botFolder + "/bot-info.json",
