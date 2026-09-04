@@ -238,16 +238,11 @@ app.post("/stop", async (req, res) => {
 });
 
 pool.query(`
-  CREATE TABLE IF NOT EXISTS bots (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    file_name TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'Offline',
-    token TEXT
-  )
+  ALTER TABLE bots
+  ADD COLUMN IF NOT EXISTS token TEXT
 `)
 .then(() => {
-  console.log("✅ Database table ready");
+  console.log("✅ Token column ready");
 })
 .catch((error) => {
   console.error("❌ Database error:", error);
