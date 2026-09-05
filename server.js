@@ -355,35 +355,7 @@ app.post("/stop", async (req, res) => {
   }
 });
 
-  const infoPath = "bots/" + botId + "/bot-info.json";
-
-  if (!fs.existsSync(infoPath)) {
-    return res.status(404).json({
-      success: false,
-      message: "Bot not found."
-    });
-  }
-
-  const info = JSON.parse(fs.readFileSync(infoPath, "utf8"));
-
-  info.status = "Offline";
-
-  fs.writeFileSync(
-    infoPath,
-    JSON.stringify(info, null, 2)
-  );
-
-  await pool.query(
-    "UPDATE bots SET status = $1 WHERE id = $2",
-    ["Offline", botId]
-  );
-
-  res.json({
-    success: true,
-    message: info.name + " has been stopped. ⏹️"
-  });
-});
-
+  
 pool.query(`
   ALTER TABLE bots
   ADD COLUMN IF NOT EXISTS token TEXT
