@@ -309,7 +309,7 @@ app.post("/start", async (req, res) => {
 
   const info = JSON.parse(fs.readFileSync(infoPath, "utf8"));
 
-  info.status = "Running";
+  info.status = "Offline";
 
   fs.writeFileSync(
     infoPath,
@@ -318,12 +318,12 @@ app.post("/start", async (req, res) => {
 
   await pool.query(
     "UPDATE bots SET status = $1 WHERE id = $2",
-    ["Running", botId]
+    ["Offline", botId]
   );
 
   res.json({
     success: true,
-    message: info.name + " is now marked as Running! ▶️"
+    message: info.name + " has been stopped. ⏹️"
   });
 });
 
