@@ -6,9 +6,46 @@ const fs = require("fs");
 const { Pool } = require("pg");
 
 const crypto = require("crypto");
-const { spawn } = require("child_process");
 
 const botProcesses = {};
+
+const { spawn } = require("child_process");
+async function getBotToken(botId) {
+  const result = await pool.query(
+    "SELECT token FROM bots WHERE id = $1",
+    [botId]
+  );
+
+  if (result.rows.length === 0 || !result.rows[0].token) {
+    throw new Error("Bot token not found.");
+  }
+
+  const encrypted = result.rows[0].token;
+
+  const [ivHex, encryptedText] = encrypted.split(":");
+
+  const key = crypto
+    .createHash("sha256")
+    .update(process.env.BOT_ENCRYPTION_KEY)
+    .digest();
+
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    key,
+    Buffer.from(ivHex, "hex")
+  );
+
+  let decrypted = decipher.update(
+    encryptedText,
+    "hex",
+    "utf8"
+  );
+
+  decrypted += decipher.final("utf8");
+
+  return decrypted;
+}
+
 
 function encryptToken(token) {
   const key = crypto
@@ -172,6 +209,95 @@ app.post("/start", async (req, res) => {
     });
   }
 
+  const botFolder = "bots/" + botId;
+  const infoPath = botFolder + "/bot-info.json";
+
+  if (!fs.existsSync(infoPath)) {
+    return res.status(404).json({
+      success: false,
+      message: "Bot not found."
+    });
+  }
+
+  if (botProcesses[botId]) {
+    return res.json({
+      success: false,
+      message: "Bot is already running."
+    });
+  }
+
+  try {
+    const info = JSON.parse(
+      fs.readFileSync(infoPath, "utf8")
+    );
+
+    const botProcess = spawn(
+      "node",
+      ["index.js"],
+      {
+        cwd: botFolder,
+        env: {
+          ...process.env,
+          DISCORD_TOKEN: await getBotToken(botId)
+        }
+      }
+    );
+
+    botProcesses[botId] = botProcess;
+
+    botProcess.stdout.on("data", (data) => {
+      console.log(`[${info.name}] ${data}`);
+    });
+
+    botProcess.stderr.on("data", (data) => {
+      console.error(`[${info.name}] ${data}`);
+    });
+
+    botProcess.on("close", async (code) => {
+      console.log(
+        `[${info.name}] Process exited with code ${code}`
+      );
+
+      delete botProcesses[botId];
+
+      try {
+        await pool.query(
+          "UPDATE bots SET status = $1 WHERE id = $2",
+          ["Offline", botId]
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
+    info.status = "Running";
+
+    fs.writeFileSync(
+      infoPath,
+      JSON.stringify(info, null, 2)
+    );
+
+    await pool.query(
+      "UPDATE bots SET status = $1 WHERE id = $2",
+      ["Running", botId]
+    );
+
+    res.json({
+      success: true,
+      message: info.name + " started successfully! ▶️"
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to start bot."
+    });
+  }
+});
+  
+
   const infoPath = "bots/" + botId + "/bot-info.json";
 
   if (!fs.existsSync(infoPath)) {
@@ -210,6 +336,54 @@ app.post("/stop", async (req, res) => {
       message: "Bot ID is required."
     });
   }
+
+  const infoPath = "bots/" + botId + "/bot-info.json";
+
+  if (!fs.existsSync(infoPath)) {
+    return res.status(404).json({
+      success: false,
+      message: "Bot not found."
+    });
+  }
+
+  try {
+    const info = JSON.parse(
+      fs.readFileSync(infoPath, "utf8")
+    );
+
+    const botProcess = botProcesses[botId];
+
+    if (botProcess) {
+      botProcess.kill("SIGTERM");
+      delete botProcesses[botId];
+    }
+
+    info.status = "Offline";
+
+    fs.writeFileSync(
+      infoPath,
+      JSON.stringify(info, null, 2)
+    );
+
+    await pool.query(
+      "UPDATE bots SET status = $1 WHERE id = $2",
+      ["Offline", botId]
+    );
+
+    res.json({
+      success: true,
+      message: info.name + " stopped successfully! ⏹️"
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to stop bot."
+    });
+  }
+});
 
   const infoPath = "bots/" + botId + "/bot-info.json";
 
