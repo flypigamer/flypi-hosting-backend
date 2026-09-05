@@ -6,6 +6,9 @@ const fs = require("fs");
 const { Pool } = require("pg");
 
 const crypto = require("crypto");
+const { spawn } = require("child_process");
+
+const botProcesses = {};
 
 function encryptToken(token) {
   const key = crypto
